@@ -1,0 +1,19 @@
+{
+  "name": "puncher",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Yura",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"No tests configured\""
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "express": "^5.2.1",
+    "mongodb": "^7.1.1"
+  }
+}
