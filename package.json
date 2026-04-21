@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "echo \"No tests configured\""
+    "test": "node --test --test-isolation=none",
+    "test:coverage": "node --test --test-isolation=none --experimental-test-coverage --test-coverage-include=app.js --test-coverage-lines=80"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

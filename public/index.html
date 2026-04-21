@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Puncher | Workforce Time Tracking</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand">
+          <p class="eyebrow">Workforce Time Tracking</p>
+          <div class="brand__row">
+            <h1>Puncher</h1>
+            <span class="status-pill status-pill--live" id="healthBadge">Loading</span>
+          </div>
+        </div>
+        <nav class="section-nav">
+          <a href="#overview">Overview</a>
+          <a href="#employee">Employee</a>
+          <a href="#kiosk">Kiosk</a>
+          <a href="#admin">Admin</a>
+        </nav>
+      </header>
+
+      <main class="layout">
+        <section class="hero">
+          <article class="hero__primary panel">
+            <p class="eyebrow">Unified Operations Surface</p>
+            <h2>Time tracking that stays usable for employees, shared kiosks, and admins.</h2>
+            <p class="hero__lede">
+              Puncher brings attendance, corrections, staffing operations, and reporting into one place. The interface
+              is organized by role so daily actions stay obvious and lower-frequency maintenance work stays controlled.
+            </p>
+            <div class="hero__actions">
+              <a class="button button--primary" href="#employee">Open Employee Portal</a>
+              <a class="button" href="#admin">Go To Admin HQ</a>
+              <a class="button button--soft" href="#kiosk">Open Kiosk Flow</a>
+            </div>
+            <div class="role-strip">
+              <a class="role-card" href="#employee">
+                <span class="role-card__label">Employee</span>
+                <strong>Clock in, review hours, request corrections.</strong>
+              </a>
+              <a class="role-card" href="#kiosk">
+                <span class="role-card__label">Kiosk</span>
+                <strong>Fast shared-terminal punch in and punch out.</strong>
+              </a>
+              <a class="role-card" href="#admin">
+                <span class="role-card__label">Admin</span>
+                <strong>Manage staff, review exceptions, export reports.</strong>
+              </a>
+            </div>
+          </article>
+
+          <aside class="hero__secondary">
+            <article class="panel panel--highlight">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">System Health</p>
+                  <h3>Live Runtime</h3>
+                </div>
+              </div>
+              <dl class="key-stats" id="healthStats">
+                <div>
+                  <dt>Companies</dt>
+                  <dd>--</dd>
+                </div>
+                <div>
+                  <dt>Users</dt>
+                  <dd>--</dd>
+                </div>
+                <div>
+                  <dt>Logs</dt>
+                  <dd>--</dd>
+                </div>
+                <div>
+                  <dt>Corrections</dt>
+                  <dd>--</dd>
+                </div>
+              </dl>
+              <p class="meta" id="healthTimestamp">Checking API health...</p>
+            </article>
+
+            <article class="panel panel--soft" id="overview">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Environment</p>
+                  <h3>Workspace Context</h3>
+                </div>
+                <button class="button button--ghost" id="refreshOverviewButton" type="button">Refresh</button>
+              </div>
+              <p class="note">
+                If the current Mongo dataset still has placeholder credentials, these selectors let you continue using
+                the business flows with a valid company and employee context.
+              </p>
+              <div class="field-grid">
+                <label>
+                  <span>Company</span>
+                  <select id="globalCompanySelect"></select>
+                </label>
+                <label>
+                  <span>User</span>
+                  <select id="globalUserSelect"></select>
+                </label>
+              </div>
+            </article>
+          </aside>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Platform Summary</p>
+              <h2>Everything already built into the product</h2>
+              <p class="section-copy">
+                The backend already supports full attendance operations. This frontend now surfaces those capabilities in
+                a cleaner, role-based workflow instead of a test harness.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="feature-card__eyebrow">Authentication</span>
+              <h3>Email and kiosk access</h3>
+              <p>Employees sign in with email and password. Shared kiosks authenticate by organization code and PIN.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__eyebrow">Attendance</span>
+              <h3>Active-shift aware punching</h3>
+              <p>Punch in, punch out, preserve notes, store punch method, and prevent duplicate active shifts.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__eyebrow">Corrections</span>
+              <h3>Employee requests and review</h3>
+              <p>Employees can request time fixes and admins can approve or reject them against linked time logs.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__eyebrow">Reporting</span>
+              <h3>Operational visibility</h3>
+              <p>Per-company dashboards, log editing, staffing management, and CSV exports are all available.</p>
+            </article>
+          </div>
+
+          <div class="split-grid">
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">API Snapshot</p>
+                  <h3>Connected Backend</h3>
+                </div>
+              </div>
+              <p class="meta" id="docsDatabase">Loading database settings...</p>
+              <ul class="endpoint-list" id="docsEndpoints"></ul>
+            </article>
+
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Interface Logic</p>
+                  <h3>How the layout is organized</h3>
+                </div>
+              </div>
+              <div class="guidance-list">
+                <div>
+                  <strong>Employee first</strong>
+                  <p>Daily punch actions and personal history stay together so workers finish routine tasks quickly.</p>
+                </div>
+                <div>
+                  <strong>Kiosk simplified</strong>
+                  <p>The shared terminal exposes only authentication and punch actions to reduce mistakes.</p>
+                </div>
+                <div>
+                  <strong>Admin grouped by job</strong>
+                  <p>Company scope, staffing, approvals, audit tools, and exports are separated clearly.</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block section-block--employee" id="employee">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Role Workspace</p>
+              <h2>Employee Portal</h2>
+              <p class="section-copy">Start shifts, verify your own time, and submit corrections without touching admin tools.</p>
+            </div>
+            <span class="status-pill" id="employeeSessionBadge">Not signed in</span>
+          </div>
+
+          <div class="workflow-grid workflow-grid--employee">
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Access</p>
+                  <h3>Sign In Or Select Context</h3>
+                </div>
+              </div>
+              <div class="stack-cluster">
+                <div class="subpanel">
+                  <h4>Email Login</h4>
+                  <form id="employeeLoginForm" class="stack-form">
+                    <label>
+                      <span>Email</span>
+                      <input name="email" type="email" placeholder="employee@company.com" required />
+                    </label>
+                    <label>
+                      <span>Password</span>
+                      <input name="password" type="password" placeholder="Password" required />
+                    </label>
+                    <button class="button button--primary" type="submit">Sign In</button>
+                  </form>
+                </div>
+
+                <div class="subpanel">
+                  <h4>Manual Context</h4>
+                  <form id="employeeContextForm" class="stack-form">
+                    <label>
+                      <span>Company</span>
+                      <select id="employeeCompanySelect" required></select>
+                    </label>
+                    <label>
+                      <span>User</span>
+                      <select id="employeeUserSelect" required></select>
+                    </label>
+                    <button class="button" type="submit">Use Selected Employee</button>
+                  </form>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel panel--accent">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Shift Control</p>
+                  <h3>Clock Actions</h3>
+                </div>
+              </div>
+              <div class="status-card status-card--prominent" id="employeeShiftStatus">
+                <p class="meta">No employee context selected yet.</p>
+              </div>
+              <form id="punchForm" class="stack-form">
+                <label>
+                  <span>Punch Method</span>
+                  <select name="punch_method">
+                    <option value="WEB_PORTAL">WEB_PORTAL</option>
+                    <option value="KIOSK">KIOSK</option>
+                    <option value="MOBILE">MOBILE</option>
+                    <option value="MANUAL">MANUAL</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Shift Note</span>
+                  <textarea name="note" rows="3" placeholder="Optional context for this shift"></textarea>
+                </label>
+                <div class="button-row">
+                  <button class="button button--primary" type="submit" name="action" value="in">Punch In</button>
+                  <button class="button button--secondary" type="submit" name="action" value="out">Punch Out</button>
+                </div>
+              </form>
+            </article>
+          </div>
+
+          <div class="split-grid split-grid--content">
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">History</p>
+                  <h3>My Time Logs</h3>
+                </div>
+                <button class="button button--ghost" id="refreshEmployeeDataButton" type="button">Refresh</button>
+              </div>
+              <form id="employeeLogFiltersForm" class="compact-grid compact-grid--filters">
+                <label>
+                  <span>Status</span>
+                  <select name="status">
+                    <option value="">All</option>
+                    <option value="active">active</option>
+                    <option value="approved">approved</option>
+                    <option value="rejected">rejected</option>
+                  </select>
+                </label>
+                <label>
+                  <span>From</span>
+                  <input name="from" type="date" />
+                </label>
+                <label>
+                  <span>To</span>
+                  <input name="to" type="date" />
+                </label>
+                <button class="button" type="submit">Apply Filters</button>
+              </form>
+              <div class="data-table" id="employeeLogsTable"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Corrections</p>
+                  <h3>Request A Time Fix</h3>
+                </div>
+              </div>
+              <form id="correctionForm" class="stack-form">
+                <label>
+                  <span>Link to time log</span>
+                  <select id="correctionLogSelect" name="time_log_id">
+                    <option value="">Auto-resolve from date or active log</option>
+                  </select>
+                </label>
+                <div class="field-grid">
+                  <label>
+                    <span>Requested Punch In</span>
+                    <input name="requested_punch_in" type="datetime-local" />
+                  </label>
+                  <label>
+                    <span>Requested Punch Out</span>
+                    <input name="requested_punch_out" type="datetime-local" />
+                  </label>
+                </div>
+                <label>
+                  <span>Reason</span>
+                  <textarea name="reason" rows="3" placeholder="Explain what needs to be corrected" required></textarea>
+                </label>
+                <button class="button button--primary" type="submit">Submit Correction</button>
+              </form>
+              <div class="data-table" id="employeeCorrectionsTable"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block section-block--kiosk" id="kiosk">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Shared Terminal</p>
+              <h2>Kiosk Mode</h2>
+              <p class="section-copy">Keep the kiosk focused on authentication and the two actions that matter most.</p>
+            </div>
+            <span class="status-pill" id="kioskSessionBadge">Awaiting PIN</span>
+          </div>
+
+          <div class="split-grid">
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Authenticate</p>
+                  <h3>Kiosk Login</h3>
+                </div>
+              </div>
+              <form id="kioskLoginForm" class="stack-form">
+                <label>
+                  <span>Organization Code</span>
+                  <input name="organization_code" type="text" placeholder="ORG-001" required />
+                </label>
+                <label>
+                  <span>PIN</span>
+                  <input name="pin" type="password" placeholder="PIN" required />
+                </label>
+                <button class="button button--primary" type="submit">Authenticate User</button>
+              </form>
+            </article>
+
+            <article class="panel panel--accent">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Punch Actions</p>
+                  <h3>Shared Clock Terminal</h3>
+                </div>
+              </div>
+              <div class="status-card status-card--prominent" id="kioskStatus">
+                <p class="meta">No kiosk user authenticated yet.</p>
+              </div>
+              <form id="kioskPunchForm" class="stack-form">
+                <label>
+                  <span>Note</span>
+                  <textarea name="note" rows="3" placeholder="Optional kiosk note"></textarea>
+                </label>
+                <div class="button-row">
+                  <button class="button button--primary" type="submit" name="action" value="in">Punch In</button>
+                  <button class="button button--secondary" type="submit" name="action" value="out">Punch Out</button>
+                </div>
+              </form>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block section-block--admin" id="admin">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Operations Workspace</p>
+              <h2>Admin HQ</h2>
+              <p class="section-copy">
+                Monitor live staffing, handle correction queues, adjust records, and export clean summaries from one
+                place.
+              </p>
+            </div>
+            <span class="status-pill" id="adminCompanyBadge">No company selected</span>
+          </div>
+
+          <div class="split-grid split-grid--feature">
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Company Scope</p>
+                  <h3>Choose Workspace</h3>
+                </div>
+                <button class="button button--ghost" id="refreshAdminButton" type="button">Refresh</button>
+              </div>
+              <form id="adminCompanyForm" class="stack-form">
+                <label>
+                  <span>Company</span>
+                  <select id="adminCompanySelect" required></select>
+                </label>
+                <label class="checkbox">
+                  <input id="includeInactiveUsersCheckbox" type="checkbox" />
+                  <span>Include inactive users in lists and filters</span>
+                </label>
+                <button class="button" type="submit">Load Company Data</button>
+              </form>
+            </article>
+
+            <article class="panel panel--highlight">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Live Summary</p>
+                  <h3>Current Workforce Status</h3>
+                </div>
+              </div>
+              <div class="key-stats key-stats--small" id="dashboardSummary">
+                <div>
+                  <dt>Employees</dt>
+                  <dd>--</dd>
+                </div>
+                <div>
+                  <dt>Active Now</dt>
+                  <dd>--</dd>
+                </div>
+                <div>
+                  <dt>Pending Corrections</dt>
+                  <dd>--</dd>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="split-grid split-grid--feature">
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Live Operations</p>
+                  <h3>Employee Status Board</h3>
+                </div>
+              </div>
+              <div class="data-table" id="dashboardEmployeesTable"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Approvals</p>
+                  <h3>Correction Review Queue</h3>
+                </div>
+              </div>
+              <form id="reviewCorrectionForm" class="stack-form">
+                <label>
+                  <span>Request</span>
+                  <select id="reviewCorrectionSelect" name="request_id" required></select>
+                </label>
+                <div class="field-grid">
+                  <label>
+                    <span>Status</span>
+                    <select name="status" required>
+                      <option value="approved">approved</option>
+                      <option value="rejected">rejected</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Reviewed By</span>
+                    <input name="reviewed_by" type="text" placeholder="Admin name or id" />
+                  </label>
+                </div>
+                <label>
+                  <span>Admin Comment</span>
+                  <textarea name="admin_comment" rows="3" placeholder="Optional review note"></textarea>
+                </label>
+                <button class="button button--primary" type="submit">Submit Review</button>
+              </form>
+              <div class="data-table" id="adminCorrectionsTable"></div>
+            </article>
+          </div>
+
+          <div class="triple-grid">
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Staffing</p>
+                  <h3>Add Employee</h3>
+                </div>
+              </div>
+              <form id="addUserForm" class="stack-form">
+                <label>
+                  <span>Name</span>
+                  <input name="name" type="text" required />
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input name="email" type="email" required />
+                </label>
+                <div class="field-grid">
+                  <label>
+                    <span>Password</span>
+                    <input name="password" type="password" required />
+                  </label>
+                  <label>
+                    <span>PIN</span>
+                    <input name="pin" type="text" required />
+                  </label>
+                </div>
+                <div class="field-grid">
+                  <label>
+                    <span>Role</span>
+                    <input name="role" type="text" placeholder="employee, manager, hr_admin" />
+                  </label>
+                  <label>
+                    <span>Department</span>
+                    <input name="department" type="text" placeholder="Operations" />
+                  </label>
+                </div>
+                <button class="button button--primary" type="submit">Create Employee</button>
+              </form>
+            </article>
+
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Security</p>
+                  <h3>Reset Credentials</h3>
+                </div>
+              </div>
+              <form id="resetCredentialsForm" class="stack-form">
+                <label>
+                  <span>User</span>
+                  <select id="resetUserSelect" name="user_id" required></select>
+                </label>
+                <label>
+                  <span>New Password</span>
+                  <input name="password" type="password" />
+                </label>
+                <label>
+                  <span>New PIN</span>
+                  <input name="pin" type="text" />
+                </label>
+                <button class="button" type="submit">Update Credentials</button>
+              </form>
+            </article>
+
+            <article class="panel panel--soft">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Reporting</p>
+                  <h3>CSV Export</h3>
+                </div>
+              </div>
+              <form id="reportForm" class="stack-form">
+                <div class="field-grid">
+                  <label>
+                    <span>From</span>
+                    <input name="from" type="date" />
+                  </label>
+                  <label>
+                    <span>To</span>
+                    <input name="to" type="date" />
+                  </label>
+                </div>
+                <button class="button" type="submit">Prepare Export</button>
+                <a class="button button--primary" id="reportDownloadLink" href="#" target="_blank" rel="noreferrer">Open CSV</a>
+              </form>
+              <p class="meta" id="reportLinkPreview">Pick a company and range to prepare the report URL.</p>
+            </article>
+          </div>
+
+          <div class="split-grid split-grid--content">
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Audit Trail</p>
+                  <h3>Time Log Search</h3>
+                </div>
+              </div>
+              <form id="adminLogsFilterForm" class="compact-grid compact-grid--filters">
+                <label>
+                  <span>User</span>
+                  <select id="adminLogUserSelect" name="user_id">
+                    <option value="">All users</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select name="status">
+                    <option value="">All</option>
+                    <option value="active">active</option>
+                    <option value="approved">approved</option>
+                    <option value="rejected">rejected</option>
+                  </select>
+                </label>
+                <label>
+                  <span>From</span>
+                  <input name="from" type="date" />
+                </label>
+                <label>
+                  <span>To</span>
+                  <input name="to" type="date" />
+                </label>
+                <button class="button" type="submit">Load Logs</button>
+              </form>
+              <div class="data-table" id="adminLogsTable"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">Record Maintenance</p>
+                  <h3>Edit Time Log</h3>
+                </div>
+              </div>
+              <form id="editLogForm" class="stack-form">
+                <label>
+                  <span>Time Log</span>
+                  <select id="editLogSelect" name="log_id" required></select>
+                </label>
+                <div class="field-grid">
+                  <label>
+                    <span>Punch In</span>
+                    <input name="punch_in" type="datetime-local" />
+                  </label>
+                  <label>
+                    <span>Punch Out</span>
+                    <input name="punch_out" type="datetime-local" />
+                  </label>
+                </div>
+                <label>
+                  <span>Status</span>
+                  <select name="status">
+                    <option value="">Keep current</option>
+                    <option value="active">active</option>
+                    <option value="approved">approved</option>
+                    <option value="rejected">rejected</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Note</span>
+                  <textarea name="note" rows="3"></textarea>
+                </label>
+                <button class="button button--primary" type="submit">Save Log</button>
+              </form>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <aside class="toast" id="toast" hidden></aside>
+    </div>
+
+    <script src="/client.js" defer></script>
+  </body>
+</html>

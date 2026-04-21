@@ -1,11 +1,13 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const express = require('express');
+const path = require('path');
 const { ObjectId } = require('mongodb');
 const { getCollections } = require('./db');
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 const VALID_LOG_STATUSES = new Set(['active', 'approved', 'rejected']);
 const VALID_REVIEW_STATUSES = new Set(['approved', 'rejected']);
@@ -321,11 +323,7 @@ async function requireCompanyAndUser(companyId, userId) {
 }
 
 app.get('/', (_req, res) => {
-  res.json({
-    name: 'Web Time Tracker API',
-    version: '1.0.0',
-    docs: '/api/docs'
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/api/health', async (_req, res) => {
@@ -630,7 +628,7 @@ app.post('/api/time-logs/punch-out', async (req, res) => {
 
   await timeLogs.updateOne({ _id: activeLog._id }, { $set: updatedLog });
   return res.json(normalizeTimeLog(updatedLog));
-GET http://localhost:3000/api/reports/YOUR_COMPANY_ID/time-logs.csv});
+});
 
 app.patch('/api/time-logs/:logId', async (req, res) => {
   const { timeLogs } = getCollections();
