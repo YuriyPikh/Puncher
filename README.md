@@ -77,7 +77,6 @@ Base path: `/api`
 - `GET /api/time-logs`
 - `POST /api/time-logs/punch-in`
 - `POST /api/time-logs/punch-out`
-- `POST /api/time-logs/:logId/notes`
 - `PATCH /api/time-logs/:logId`
 - `POST /api/time-corrections`
 - `GET /api/time-corrections`
@@ -111,21 +110,20 @@ Current limitation:
 ### Time Logs
 
 - `GET /api/time-logs` supports filters for `company_id`, `user_id`, `status`, `from`, and `to`
-- `POST /api/time-logs/punch-in` creates an active shift in MongoDB
-- `POST /api/time-logs/punch-out` closes the active shift and recalculates duration
-- `POST /api/time-logs/:logId/notes` appends notes
+- `POST /api/time-logs/punch-in` creates one active shift record in MongoDB
+- `POST /api/time-logs/punch-out` updates that same active shift record, sets `punch_out`, and recalculates duration
 - `PATCH /api/time-logs/:logId` edits punch values, note, and status
 
 ### Time Corrections
 
-- `POST /api/time-corrections` now writes to MongoDB
+- `POST /api/time-corrections` now writes to MongoDB and auto-links the correction to the active log or to the single log on the requested date when `time_log_id` is omitted
 - `GET /api/time-corrections` reads from MongoDB
 - `PATCH /api/time-corrections/:requestId/review` updates the request and linked time log when approved
 
 ### Admin and Reports
 
 - `GET /api/admin/:companyId/dashboard` builds a per-company dashboard from MongoDB users, logs, and correction requests
-- `GET /api/reports/:companyId/time-logs.csv` exports CSV using normalized ISO timestamps
+- `GET /api/reports/:companyId/time-logs.csv` exports a per-employee CSV summary with total worked minutes and hours for the selected range
 
 ## Verified Against MongoDB
 

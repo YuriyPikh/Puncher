@@ -258,6 +258,47 @@ async function findActiveLog(companyId, userId) {
   });
 }
 
+async function resolveCorrectionTargetLog({ companyId, userId, requestedPunchIn, requestedPunchOut }) {
+  const { timeLogs } = getCollections();
+
+  const activeLog = await findActiveLog(companyId, userId);
+  if (activeLog) {
+    return activeLog;
+  }
+
+  const referenceTimestamp = requestedPunchIn || requestedPunchOut;
+  if (!referenceTimestamp) {
+    const error = new Error(
+      'Provide time_log_id, or include requested_punch_in/requested_punch_out so the API can identify the target time log.'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  const matchingLogs = await timeLogs
+    .find({
+      ...buildIdFilter('company_id', companyId),
+      ...buildIdFilter('user_id', userId),
+      date: toDateOnly(referenceTimestamp)
+    })
+    .sort({ punch_in: -1 })
+    .toArray();
+
+  if (matchingLogs.length === 0) {
+    const error = new Error('No time log found for the requested correction date');
+    error.status = 404;
+    throw error;
+  }
+
+  if (matchingLogs.length > 1) {
+    const error = new Error('Multiple time logs found for that date. Provide time_log_id explicitly.');
+    error.status = 409;
+    throw error;
+  }
+
+  return matchingLogs[0];
+}
+
 async function requireCompanyAndUser(companyId, userId) {
   const [company, user] = await Promise.all([findCompanyById(companyId), findUserById(userId)]);
 
@@ -321,7 +362,7 @@ app.get('/api/docs', async (_req, res) => {
   );
 
   res.json({
-    title: 'Lab 4 REST API - Web Time Tracker',
+    title: 'REST API - Web Time Tracker',
     basePath: '/api',
     database: {
       uri: process.env.MONGODB_URI || 'mongodb://localhost:27017',
@@ -343,7 +384,6 @@ app.get('/api/docs', async (_req, res) => {
       'GET /api/time-logs',
       'POST /api/time-logs/punch-in',
       'POST /api/time-logs/punch-out',
-      'POST /api/time-logs/:logId/notes',
       'PATCH /api/time-logs/:logId',
       'POST /api/time-corrections',
       'GET /api/time-corrections',
@@ -590,29 +630,7 @@ app.post('/api/time-logs/punch-out', async (req, res) => {
 
   await timeLogs.updateOne({ _id: activeLog._id }, { $set: updatedLog });
   return res.json(normalizeTimeLog(updatedLog));
-});
-
-app.post('/api/time-logs/:logId/notes', async (req, res) => {
-  const { timeLogs } = getCollections();
-
-  requireFields(req.body, ['note']);
-
-  const log = await timeLogs.findOne(buildIdFilter('_id', req.params.logId));
-  if (!log) {
-    return res.status(404).json({ message: 'Time log not found' });
-  }
-
-  const note = String(req.body.note).trim();
-  const updatedLog = {
-    ...log,
-    note: log.note ? `${log.note} | ${note}` : note,
-    created_at: log.created_at ?? log.punch_in ?? null,
-    updated_at: nowIso()
-  };
-
-  await timeLogs.updateOne({ _id: log._id }, { $set: updatedLog });
-  return res.json(normalizeTimeLog(updatedLog));
-});
+GET http://localhost:3000/api/reports/YOUR_COMPANY_ID/time-logs.csv});
 
 app.patch('/api/time-logs/:logId', async (req, res) => {
   const { timeLogs } = getCollections();
@@ -699,6 +717,14 @@ app.post('/api/time-corrections', async (req, res) => {
     }
 
     linkedTimeLogId = linkedLog._id;
+  } else {
+    const resolvedLog = await resolveCorrectionTargetLog({
+      companyId,
+      userId,
+      requestedPunchIn,
+      requestedPunchOut
+    });
+    linkedTimeLogId = resolvedLog._id;
   }
 
   const timestamp = nowIso();
@@ -865,44 +891,55 @@ app.get('/api/reports/:companyId/time-logs.csv', async (req, res) => {
     filter.date = { ...(filter.date || {}), $lte: req.query.to };
   }
 
-  const logs = await timeLogs.find(filter).sort({ date: 1, user_id: 1 }).toArray();
-  const userIds = [...new Set(logs.map((log) => toApiId(log.user_id)))];
-  const relatedUsers =
-    userIds.length > 0
-      ? await users.find({ _id: { $in: userIds.flatMap((userId) => buildIdVariants(userId)) } }).toArray()
-      : [];
-  const userMap = new Map(relatedUsers.map((user) => [toApiId(user._id), normalizeUser(user)]));
+  const [companyUsers, logs] = await Promise.all([
+    users.find(buildIdFilter('company_id', companyId)).sort({ name: 1 }).toArray(),
+    timeLogs.find(filter).sort({ date: 1, user_id: 1 }).toArray()
+  ]);
+
+  const totalsByUserId = new Map();
+  for (const entry of logs) {
+    const log = normalizeTimeLog(entry);
+    if (log.status === 'rejected') {
+      continue;
+    }
+
+    const userId = log.user_id;
+    const current = totalsByUserId.get(userId) || {
+      shifts_count: 0,
+      total_minutes_worked: 0
+    };
+
+    current.shifts_count += 1;
+    current.total_minutes_worked += Number(log.duration_minutes) || 0;
+    totalsByUserId.set(userId, current);
+  }
 
   const header = [
-    'log_id',
-    'date',
     'company_id',
     'user_id',
-    'user_name',
+    'employee_name',
     'department',
-    'punch_in',
-    'punch_out',
-    'duration_minutes',
-    'status',
-    'note'
+    'shifts_count',
+    'total_minutes_worked',
+    'total_hours_worked'
   ];
 
-  const rows = logs.map((entry) => {
-    const log = normalizeTimeLog(entry);
-    const user = userMap.get(log.user_id);
+  const rows = companyUsers.map((entry) => {
+    const user = normalizeUser(entry);
+    const totals = totalsByUserId.get(user._id) || {
+      shifts_count: 0,
+      total_minutes_worked: 0
+    };
+    const totalHoursWorked = (totals.total_minutes_worked / 60).toFixed(2);
 
     return [
-      log._id,
-      log.date,
-      log.company_id,
-      log.user_id,
-      user ? user.name : '',
-      user ? user.department : '',
-      log.punch_in,
-      log.punch_out,
-      log.duration_minutes,
-      log.status,
-      log.note || ''
+      companyId,
+      user._id,
+      user.name || '',
+      user.department || '',
+      totals.shifts_count,
+      totals.total_minutes_worked,
+      totalHoursWorked
     ]
       .map(escapeCsvValue)
       .join(',');
